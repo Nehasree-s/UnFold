@@ -59,7 +59,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch("https://unfold-v9xc.onrender.com", {
+      const response = await fetch("https://unfold-v9xc.onrender.com/api/summarize", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -115,7 +115,7 @@ function App() {
     setIsChatting(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+      const response = await fetch("https://unfold-v9xc.onrender.com/api/chat", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
