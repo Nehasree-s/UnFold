@@ -52,8 +52,6 @@ function App() {
   const [isChatting, setIsChatting] = useState(false);
   const [isChatExpanded, setIsChatExpanded] = useState(false);
 
-  const API_BASE_URL = "http://localhost:5000";
-
   const generateSummary = async () => {
     if (!extractedText) return;
 
