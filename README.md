@@ -1,203 +1,169 @@
-UNFOLD
+# 📄 UnFold
 
-UnFold is an AI-powered document intelligence platform that turns
-dense documents into clear, useful insights. Upload a document, unfold
-it with AI, explore its summary and insights, and chat with the document
-using questions grounded in its content.
+### AI-Powered Document Intelligence Platform
 
-Features
+UnFold turns dense documents into clear, useful insights. Upload a document, unfold it with AI, explore its summaries and insights, and chat with the document using questions grounded in its content.
 
-Document upload and text extraction
+---
 
-AI-powered document analysis
+## ✨ Features
 
-Short, medium, and long summary modes
+- 📄 **Document Upload & Text Extraction**
+- 🤖 **AI-Powered Document Analysis**
+- 📝 **Short, Medium & Long Summary Modes**
+- 💡 **Key Points & Insight Mapping**
+- 💬 **Document-Grounded AI Chat**
+- 🎯 **Detection of Questions Unrelated to the Document**
+- 🔄 **Persistent Chat History**
+- ⛶ **Expandable Chat View**
+- 📊 **Processing Progress Feedback**
 
-Key points and insight mapping
+---
 
-Document-grounded AI chat
+## 🛠️ Tech Stack
 
-Detection of questions unrelated to the uploaded document
+### Frontend
+- React
+- Vite
+- JavaScript
+- CSS
 
-Persistent chat history while switching between Upload and Chat
+### Backend
+- Node.js
+- Express.js
 
-Expandable chat view
+### AI & Document Processing
+- AI-powered text analysis
+- PDF text extraction
+- Document-grounded question answering
 
-Processing progress feedback
+### Deployment
+- Vercel — Frontend
+- Render — Backend
 
-Tech Stack
+---
 
-Frontend
+## 🚀 How It Works
 
-React
+```text
+Upload Document
+      ↓
+Extract Document Text
+      ↓
+UnFold with AI
+      ↓
+Generate Summary & Insights
+      ↓
+Ask Questions
+      ↓
+Get Document-Grounded Answers
+````
 
-Vite
+---
 
-JavaScript
+## 💬 Document Chat
 
-CSS
+After unfolding a document, users can switch to the **Chat** section and ask questions about its content.
 
-Backend
+The chat provides answers grounded in the uploaded document and identifies questions that are unrelated to the document.
 
-Node.js
+---
 
-Express.js
+## 📌 Key Highlights
 
-CORS
+* Clean and simple document analysis interface
+* Multiple summary depth options
+* AI-generated insights
+* Context-aware document chat
+* Persistent conversations while switching between sections
+* Expandable chat interface
+* Processing progress feedback
+* Document relevance detection
 
-dotenv
+---
 
-AI
+## 🌐 Live Demo
 
-Google Gemini API
+🔗 https://unfold-amber.vercel.app/
 
-@google/genai
+## 📂 Project Structure
 
-Deployment
-
-Vercel --- Frontend
-
-Render --- Backend
-
-Project Structure
-
-Doc_Summary/
+```text
+UnFold/
+│
 ├── client/
 │   ├── src/
-│   │   ├── assets/
 │   │   ├── App.jsx
 │   │   ├── App.css
 │   │   ├── chat_style.css
 │   │   ├── documentProcessor.js
-│   │   ├── index.css
 │   │   └── main.jsx
+│   │
 │   ├── package.json
 │   └── vite.config.js
+│
 ├── server/
 │   ├── server.js
 │   ├── package.json
 │   └── .env
+│
 └── README.md
+```
 
-Getting Started
+---
 
-Clone
+## ⚙️ Run Locally
 
+### 1. Clone the repository
+
+```bash
 git clone https://github.com/Nehasree-s/UnFold.git
 cd UnFold
+```
 
-Frontend
+### 2. Install frontend dependencies
 
+```bash
 cd client
 npm install
+```
+
+### 3. Start the frontend
+
+```bash
 npm run dev
+```
 
-Backend
+The frontend will run on the Vite development server.
 
-In a separate terminal:
+### 4. Install backend dependencies
 
+Open another terminal:
+
+```bash
 cd server
 npm install
+```
+
+### 5. Start the backend
+
+```bash
 npm start
+```
 
-The backend runs on http://localhost:5000.
+---
 
-If a development script is configured in server/package.json, you can
-use:
+## 🔗 Repository
 
-npm run dev
+GitHub:
+[https://github.com/Nehasree-s/UnFold](https://github.com/Nehasree-s/UnFold)
 
-Environment Variables
+---
 
-Create server/.env:
+## 👩‍💻 Author
 
-GEMINI_API_KEY=your_gemini_api_key
-
-Never expose the Gemini API key in the frontend or commit the .env
-file.
-
-API
-
-POST /api/summarize
-
-Analyzes extracted document text and returns a structured AI response
-containing:
-
-Summary
-
-Key points
-
-Improvement suggestions
-
-Insight map
-
-Example body:
-
-{
-  "text": "Document text...",
-  "length": "medium"
-}
-
-POST /api/chat
-
-Answers questions using the uploaded document as the source of truth. If
-the document does not contain relevant information, the application
-responds accordingly rather than inventing an answer.
-
-How It Works
-
-Upload Document
-      ↓
-Extract Text
-      ↓
-Unfold / Analyze
-      ↓
-Summary + Key Points + Insights
-      ↓
-Ask Questions
-      ↓
-Document-Grounded AI Answer
-
-Deployment
-
-The frontend is deployed on Vercel and the backend is deployed on
-Render.
-
-Production backend:
-
-https://unfold-v9xc.onrender.com
-
-For production, frontend API requests should point to the deployed
-backend.
-
-Design Principles
-
-Clarity --- Turn dense documents into information that is easier to
-understand.
-
-Grounding --- Keep AI answers tied to the uploaded document.
-
-Simplicity --- Provide a clean interface without unnecessary
-controls.
-
-Future Improvements
-
-Better mathematical/LaTeX rendering
-
-More document formats
-
-Improved document search and retrieval
-
-Conversation export
-
-Authentication and saved documents
-
-Page-level references and citations
-
-Author
-
-Nehasree Samudrala
+**Nehasree Samudrala**
 
 Built as an AI-powered document intelligence project.
 
-UnFold --- Document intelligence, made simple.
+`
