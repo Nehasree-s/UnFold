@@ -6,6 +6,10 @@ UnFold turns dense documents into clear, useful insights. Upload a document, unf
 
 ---
 
+## 🌐 Live Demo
+
+🔗 https://unfold-amber.vercel.app/
+
 ## ✨ Features
 
 - 📄 **Document Upload & Text Extraction**
@@ -81,10 +85,6 @@ The chat provides answers grounded in the uploaded document and identifies quest
 * Document relevance detection
 
 ---
-
-## 🌐 Live Demo
-
-🔗 https://unfold-amber.vercel.app/
 
 ## 📂 Project Structure
 
@@ -165,5 +165,3 @@ GitHub:
 **Nehasree Samudrala**
 
 Built as an AI-powered document intelligence project.
-
-`
