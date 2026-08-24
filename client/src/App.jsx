@@ -59,7 +59,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/summarize`, {
+      const response = await fetch("https://unfold-v9xc.onrender.com", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
