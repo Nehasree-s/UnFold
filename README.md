@@ -8,7 +8,9 @@ UnFold turns dense documents into clear, useful insights. Upload a document, unf
 
 ## 🌐 Live Demo
 
-🔗 https://unfold-amber.vercel.app/
+🔗 https://unfold-amber.vercel.app
+
+---
 
 ## ✨ Features
 
