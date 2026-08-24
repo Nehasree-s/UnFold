@@ -1079,3 +1079,26 @@ button {
     gap: 7px;
   }
 }
+.chat-discovery-hint {
+  margin-top: 28px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: #7653a8;
+}
+
+.chat-discovery-hint strong {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.chat-discovery-hint span {
+  font-size: 15px;
+  color: #9a8fa5;
+}
+
+.chat-discovery-hint b {
+  color: #7653a8;
+  font-weight: 600;
+}

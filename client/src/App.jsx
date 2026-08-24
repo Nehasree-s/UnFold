@@ -15,10 +15,18 @@ import {
   CheckCircle2,
   ArrowUpRight,
   Layers3,
+  MessageCircle,
+  Send,
+  Bot,
+  User,
+  LoaderCircle,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { createWorker } from "tesseract.js";
 import { extractText } from "./documentProcessor";
 import "./App.css";
+import "./chat_style.css";
 
 function App() {
   const fileInputRef = useRef(null);
@@ -37,6 +45,15 @@ function App() {
 
   const [activeInsight, setActiveInsight] = useState(0);
 
+  // Switches the upload panel between document upload and document chat.
+  const [activeMode, setActiveMode] = useState("upload");
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState("");
+  const [isChatting, setIsChatting] = useState(false);
+  const [isChatExpanded, setIsChatExpanded] = useState(false);
+
+  const API_BASE_URL = "http://localhost:5000";
+
   const generateSummary = async () => {
     if (!extractedText) return;
 
@@ -44,7 +61,7 @@ function App() {
     setError("");
 
     try {
-      const response = await fetch("https://unfold-v9xc.onrender.com/api/summarize", {
+      const response = await fetch(`${API_BASE_URL}/api/summarize`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -70,6 +87,87 @@ function App() {
       );
     } finally {
       setIsSummarizing(false);
+    }
+  };
+
+  const sendChatMessage = async () => {
+    const question = chatInput.trim();
+
+    if (!question || !extractedText || isChatting) return;
+
+    if (question.length > 1000) {
+      setError("Please keep your question under 1000 characters.");
+      return;
+    }
+
+    setError("");
+    setChatInput("");
+
+    const userMessage = {
+      role: "user",
+      content: question,
+    };
+
+    const historyForRequest = chatMessages.slice(-8).map((message) => ({
+      role: message.role,
+      content: message.content,
+    }));
+
+    setChatMessages((messages) => [...messages, userMessage]);
+    setIsChatting(true);
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/chat`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          text: extractedText,
+          question,
+          history: historyForRequest,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || "Failed to answer the question.");
+      }
+
+      setChatMessages((messages) => [
+        ...messages,
+        {
+          role: "assistant",
+          content:
+            data.related === false
+              ? "This document doesn't contain anything related to that."
+              : data.answer ||
+                "I couldn't find enough information about that in this document.",
+          isUnavailable: data.related === false,
+        },
+      ]);
+    } catch (err) {
+      console.error(err);
+      setChatMessages((messages) => [
+        ...messages,
+        {
+          role: "assistant",
+          content:
+            err.message ||
+            "I couldn't answer that right now. Please try again.",
+          isError: true,
+        },
+      ]);
+    } finally {
+      setIsChatting(false);
+    }
+  };
+
+  const handleChatKeyDown = (event) => {
+    if (event.key === "Enter" && !event.shiftKey) {
+      event.preventDefault();
+      sendChatMessage();
     }
   };
 
@@ -102,6 +200,9 @@ function App() {
     setError("");
     setExtractedText("");
     setSummary(null);
+    setChatMessages([]);
+    setChatInput("");
+    setActiveMode("upload");
 
     try {
       let text = "";
@@ -148,6 +249,9 @@ function App() {
     setSummary(null);
     setExtractedText("");
     setActiveInsight(0);
+    setChatMessages([]);
+    setChatInput("");
+    setActiveMode("upload");
 
     if (!selectedFile) return;
 
@@ -181,6 +285,9 @@ function App() {
     setSummary(null);
     setProgress(0);
     setActiveInsight(0);
+    setChatMessages([]);
+    setChatInput("");
+    setActiveMode("upload");
 
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
@@ -207,13 +314,9 @@ function App() {
             title: "What's missing",
             eyebrow: "GAP DETECTION",
             description:
-              "Areas that could use more evidence, explanation, or context.",
+              "Useful areas that could be explored further to make the discussion stronger.",
             points:
-              summary.missingPoints?.slice(0, 3) ||
-              summary.gaps?.slice(0, 3) ||
-              summary.questions?.slice(0, 3) ||
-              summary.improvementSuggestions?.slice(0, 3) ||
-              [],
+              summary.improvementSuggestions?.slice(0, 3) || [],
           },
         ]
       : [];
@@ -223,288 +326,8 @@ function App() {
 
   const selectedInsight = insightMap[activeInsight] || insightMap[0];
 
-  const insightLensLabels = [
-    "KEY IDEAS",
-    "THINGS TO CHECK",
-    "GAPS TO CONSIDER",
-  ];
-
   return (
-    <>
-      <style>{`
-        /* Unfold concept-map redesign: quieter, editorial, less "AI dashboard" */
-        .unfold-map-card {
-          overflow: hidden;
-          background: #fffdfa;
-          border-color: #e7dfdc;
-          box-shadow: 0 18px 45px rgba(75, 59, 52, 0.06);
-        }
-
-        .unfold-map-header {
-          margin-bottom: 28px;
-        }
-
-        .unfold-map-header h2 {
-          margin-bottom: 7px;
-          letter-spacing: -0.025em;
-        }
-
-        .unfold-map-header p {
-          max-width: 680px;
-        }
-
-        .unfold-map-header-icon {
-          display: none;
-        }
-
-        .unfold-map {
-          position: relative;
-          padding: 8px 8px 2px;
-        }
-
-        .map-center {
-          width: min(300px, 90%);
-          min-height: 70px;
-          margin: 0 auto;
-          padding: 12px 18px;
-          box-sizing: border-box;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 12px;
-          border: 1px solid #ded4d0;
-          border-radius: 14px;
-          background: #fff;
-          box-shadow: 0 7px 18px rgba(75, 59, 52, 0.05);
-          position: relative;
-          z-index: 2;
-        }
-
-        .map-center-icon {
-          width: 38px;
-          height: 38px;
-          border-radius: 10px;
-          display: grid;
-          place-items: center;
-          color: #6f5b7c;
-          background: #f0e9f4;
-          flex: 0 0 auto;
-        }
-
-        .map-center div:last-child {
-          display: flex;
-          flex-direction: column;
-          gap: 3px;
-        }
-
-        .map-center span {
-          font-size: 9px;
-          line-height: 1;
-          letter-spacing: .13em;
-          font-weight: 750;
-          color: #a0959b;
-        }
-
-        .map-center strong {
-          font-size: 16px;
-          font-weight: 700;
-          color: #332f35;
-        }
-
-        .map-connector-main {
-          width: 1px;
-          height: 24px;
-          margin: 0 auto;
-          background: #cfc3be;
-        }
-
-        .map-branches {
-          position: relative;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
-          gap: 18px;
-          padding-top: 18px;
-        }
-
-        .map-branches::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 16.666%;
-          right: 16.666%;
-          height: 1px;
-          background: #cfc3be;
-        }
-
-        .map-branch-wrap {
-          position: relative;
-          padding-top: 0;
-        }
-
-        .map-connector-branch {
-          position: absolute;
-          top: -18px;
-          left: 50%;
-          width: 1px;
-          height: 18px;
-          background: #cfc3be;
-        }
-
-        .map-branch {
-          width: 100%;
-          min-height: 112px;
-          padding: 18px 17px;
-          border: 1px solid #e3dbd7;
-          border-radius: 13px;
-          background: #fff;
-          color: inherit;
-          display: flex;
-          align-items: flex-start;
-          gap: 13px;
-          text-align: left;
-          cursor: pointer;
-          transition: border-color .18s ease, box-shadow .18s ease, transform .18s ease;
-          box-sizing: border-box;
-          font: inherit;
-          box-shadow: 0 5px 16px rgba(75, 59, 52, 0.035);
-        }
-
-        .map-branch:hover {
-          transform: translateY(-1px);
-          border-color: #cdbfc0;
-          box-shadow: 0 10px 22px rgba(75, 59, 52, .07);
-        }
-
-        .map-branch.active {
-          background: #fbf7ff;
-          border-color: #bda7d0;
-          box-shadow: 0 9px 22px rgba(111, 82, 126, .08);
-        }
-
-        .map-branch.challenge.active {
-          background: #fff8f2;
-          border-color: #dfb99f;
-        }
-
-        .map-branch-icon {
-          width: 34px;
-          height: 34px;
-          border-radius: 9px;
-          display: grid;
-          place-items: center;
-          flex: 0 0 auto;
-          color: #725d7d;
-          background: #f1ebf4;
-        }
-
-        .map-branch.challenge .map-branch-icon {
-          color: #ad7453;
-          background: #f9e9df;
-        }
-
-        .map-branch-copy {
-          min-width: 0;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          padding-top: 1px;
-        }
-
-        .map-branch-copy small {
-          font-size: 9px;
-          line-height: 1.2;
-          letter-spacing: .12em;
-          font-weight: 750;
-          color: #9a9096;
-        }
-
-        .map-branch-copy strong {
-          font-size: 15px;
-          line-height: 1.3;
-          font-weight: 700;
-          color: #363138;
-        }
-
-        .map-branch-copy em {
-          font-style: normal;
-          font-size: 11px;
-          color: #a2979c;
-        }
-
-        .map-branch-arrow {
-          margin-left: auto;
-          color: #9a8e95;
-          font-size: 17px;
-          line-height: 1;
-          padding-top: 1px;
-        }
-
-        .map-selected-panel {
-          margin-top: 22px;
-          padding: 22px 24px 20px;
-          border: 1px solid #e5ddda;
-          border-radius: 14px;
-          background: #fcfaf9;
-        }
-
-        .map-selected-heading {
-          display: flex;
-          align-items: flex-start;
-          justify-content: space-between;
-          gap: 18px;
-        }
-
-        .map-selected-heading h3 {
-          margin: 5px 0 0;
-          letter-spacing: -0.015em;
-        }
-
-        .map-selected-panel .detail-description {
-          margin: 12px 0 15px;
-        }
-
-        .map-selected-panel .detail-count {
-          background: #fff;
-          border-color: #e2d9d6;
-        }
-
-        .insight-point {
-          border-color: #ebe3df !important;
-          background: #fff !important;
-          border-radius: 10px !important;
-        }
-
-        .map-footer {
-          display: none;
-        }
-
-        .result-grid {
-          display: none !important;
-        }
-
-        @media (max-width: 850px) {
-          .map-branches {
-            grid-template-columns: 1fr;
-            gap: 10px;
-            padding-top: 0;
-          }
-
-          .map-branches::before,
-          .map-connector-branch {
-            display: none;
-          }
-
-          .map-branch { min-height: 92px; }
-        }
-
-        @media (max-width: 560px) {
-          .unfold-map { padding-left: 0; padding-right: 0; }
-          .map-center { width: 100%; }
-          .map-selected-panel { padding: 17px; }
-          .map-selected-heading { flex-direction: column; gap: 8px; }
-        }
-      `}</style>
-      <div className="unfold-app">
+    <div className="unfold-app">
       <header className="site-header">
         <div className="header-inner">
           <div className="brand">
@@ -577,11 +400,133 @@ function App() {
             onDrop={handleDrop}
           >
             <div className="upload-card-top">
-              <span className="section-kicker">START HERE</span>
-              <span className="file-limit">MAX 10 MB</span>
+              <span className="section-kicker">{activeMode === "chat" ? "ASK YOUR DOCUMENT" : "START HERE"}</span>
+
+              {extractedText ? (
+                <div className="mode-switcher" aria-label="Document mode">
+                  <button
+                    type="button"
+                    onClick={() => setActiveMode("upload")}
+                    className={activeMode === "upload" ? "active" : ""}
+                  >
+                    <Upload size={13} />
+                    Upload
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setActiveMode("chat")}
+                    className={activeMode === "chat" ? "active" : ""}
+                  >
+                    <MessageCircle size={13} />
+                    Chat
+                  </button>
+                </div>
+              ) : (
+                <span className="file-limit">MAX 10 MB</span>
+              )}
             </div>
 
-            {!file ? (
+            {activeMode === "chat" && extractedText ? (
+              <div className={`document-chat ${isChatExpanded ? "chat-expanded" : ""}`}>
+                <div className="chat-intro">
+                  <div className="chat-intro-icon">
+                    <Bot size={19} />
+                  </div>
+
+                  <div className="chat-intro-copy">
+                    <strong>Ask about this document</strong>
+                    <p>
+                      Ask questions about the uploaded document. Answers stay
+                      grounded in what it contains.
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className="chat-expand-button"
+                    onClick={() => setIsChatExpanded((expanded) => !expanded)}
+                    aria-label={isChatExpanded ? "Collapse chat" : "Extend chat"}
+                  >
+                    {isChatExpanded ? (
+                      <>
+                        <Minimize2 size={14} />
+                        Collapse
+                      </>
+                    ) : (
+                      <>
+                        <Maximize2 size={14} />
+                        Extend
+                      </>
+                    )}
+                  </button>
+                </div>
+
+                <div className="chat-messages" aria-live="polite">
+                  {chatMessages.length === 0 ? (
+                    <div className="chat-empty">
+                      <MessageCircle size={20} />
+                      <span>Try asking about a concept, section, finding, or conclusion.</span>
+                    </div>
+                  ) : (
+                    chatMessages.map((message, index) => (
+                      <div
+                        key={`${message.role}-${index}`}
+                        className={`chat-message ${message.role} ${
+                          message.isUnavailable ? "unavailable" : ""
+                        } ${message.isError ? "error" : ""}`}
+                      >
+                        <span className="chat-avatar">
+                          {message.role === "assistant" ? (
+                            <Bot size={14} />
+                          ) : (
+                            <User size={14} />
+                          )}
+                        </span>
+                        <p>{message.content}</p>
+                      </div>
+                    ))
+                  )}
+
+                  {isChatting && (
+                    <div className="chat-message assistant">
+                      <span className="chat-avatar">
+                        <Bot size={14} />
+                      </span>
+                      <p className="chat-thinking">
+                        <LoaderCircle size={15} className="spin" />
+                        Reading the document...
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="chat-composer">
+                  <textarea
+                    value={chatInput}
+                    onChange={(event) => setChatInput(event.target.value)}
+                    onKeyDown={handleChatKeyDown}
+                    placeholder="Ask something about this document..."
+                    maxLength={1000}
+                    rows={2}
+                    disabled={isChatting}
+                    aria-label="Ask about the document"
+                  />
+                  <button
+                    type="button"
+                    onClick={sendChatMessage}
+                    disabled={!chatInput.trim() || isChatting}
+                    className="chat-send"
+                    aria-label="Send question"
+                  >
+                    <Send size={16} />
+                  </button>
+                </div>
+
+                <div className="chat-hint">
+                  Press Enter to send · Shift + Enter for a new line
+                </div>
+              </div>
+            ) : !file ? (
               <>
                 <div className="upload-visual">
                   <div className="upload-icon">
@@ -644,11 +589,23 @@ function App() {
                   disabled={isProcessing}
                   className="primary-button analyze-button"
                 >
-                  <Search size={17} />
+                  {!extractedText && <Search size={17} />}
+
                   {isProcessing
                     ? `Reading document · ${progress}%`
+                    : extractedText
+                    ? "Document unfolded ✓"
                     : "Unfold this document"}
                 </button>
+
+                {extractedText && !isProcessing && (
+                  <div className="chat-discovery-hint">
+                    <strong>✨ Want to ask your document something?</strong>
+                    <span>
+                      Chat with your document using the <b>Chat</b> option above ↑
+                    </span>
+                  </div>
+                )}
 
                 {isProcessing && (
                   <div className="progress-track">
@@ -726,95 +683,77 @@ function App() {
               <p>{summary.summary}</p>
             </div>
 
-            <div className="insight-map-card unfold-map-card">
-              <div className="insight-header unfold-map-header">
+            <div className="insight-map-card">
+              <div className="insight-header">
                 <div>
-                  <span className="section-kicker">DOCUMENT MAP</span>
-                  <h2>What stands out in this document?</h2>
+                  <span className="section-kicker">THE THINKING LAYER</span>
+                  <h2>Insight Map</h2>
                   <p>
-                    Follow the three branches to see the main ideas, things worth
-                    checking, and gaps worth considering.
+                    Instead of hiding the analysis in long sections, explore
+                    the document through three different lenses.
                   </p>
                 </div>
 
-                <div className="insight-header-icon unfold-map-header-icon">
+                <div className="insight-header-icon">
                   <Network size={22} />
                 </div>
               </div>
 
-              <div className="unfold-map">
-                <div className="map-center">
-                  <div className="map-center-icon">
-                    <FileText size={19} />
-                  </div>
-                  <div>
-                    <span>DOCUMENT</span>
-                    <strong>Core ideas</strong>
-                  </div>
-                </div>
+              <div className="insight-tabs">
+                {insightMap.map((insight, index) => {
+                  const active = activeInsight === index;
+                  const isChallenge =
+                    insight.title?.toLowerCase().includes("watch") ||
+                    insight.title?.toLowerCase().includes("risk") ||
+                    insight.title?.toLowerCase().includes("challenge");
 
-                <div className="map-connector map-connector-main" />
+                  return (
+                    <button
+                      key={index}
+                      onClick={() => setActiveInsight(index)}
+                      className={`insight-tab ${active ? "active" : ""} ${
+                        isChallenge ? "challenge" : ""
+                      }`}
+                    >
+                      <span className="tab-icon">
+                        {isChallenge ? (
+                          <AlertTriangle size={18} />
+                        ) : index === 2 ? (
+                          <Lightbulb size={18} />
+                        ) : (
+                          <Target size={18} />
+                        )}
+                      </span>
 
-                <div className="map-branches">
-                  {insightMap.map((insight, index) => {
-                    const active = activeInsight === index;
-                    const isChallenge =
-                      insight.title?.toLowerCase().includes("watch") ||
-                      insight.title?.toLowerCase().includes("risk") ||
-                      insight.title?.toLowerCase().includes("challenge");
-
-                    const branchIcon =
-                      isChallenge ? (
-                        <AlertTriangle size={17} />
-                      ) : index === 2 ? (
-                        <Lightbulb size={17} />
-                      ) : (
-                        <Target size={17} />
-                      );
-
-                    return (
-                      <div className="map-branch-wrap" key={index}>
-                        <div className="map-connector map-connector-branch" />
-
-                        <button
-                          type="button"
-                          onClick={() => setActiveInsight(index)}
-                          className={`map-branch ${active ? "active" : ""} ${
-                            isChallenge ? "challenge" : ""
-                          }`}
-                        >
-                          <span className="map-branch-icon">{branchIcon}</span>
-
-                          <span className="map-branch-copy">
-                            <small>{insightLensLabels[index] || "MORE CONTEXT"}</small>
-                            <strong>{insight.title}</strong>
-                            <em>
-                              {insight.points?.length || 0} key points
-                            </em>
-                          </span>
-
-                          <span className="map-branch-arrow">
-                            {active ? "−" : "+"}
-                          </span>
-                        </button>
-                      </div>
-                    );
-                  })}
-                </div>
+                      <span className="tab-copy">
+                        <small>
+                          {insight.eyebrow ||
+                            (index === 0
+                              ? "UNDERSTANDING"
+                              : index === 1
+                              ? "CRITICAL VIEW"
+                              : "GAP DETECTION")}
+                        </small>
+                        <strong>{insight.title}</strong>
+                        <em>{insight.points?.length || 0} connected insights</em>
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
 
               {selectedInsight && (
-                <div className="map-selected-panel">
-                  <div className="map-selected-heading">
+                <div className="insight-detail">
+                  <div className="detail-heading">
                     <div>
                       <span className="detail-kicker">
-                        {insightLensLabels[activeInsight] || selectedInsight.eyebrow || "SELECTED LENS"}
+                        {selectedInsight.eyebrow || "CONNECTED INSIGHTS"}
                       </span>
                       <h3>{selectedInsight.title}</h3>
                     </div>
 
                     <span className="detail-count">
-                      {selectedInsight.points?.length || 0} key points
+                      {selectedInsight.points?.length || 0} points
                     </span>
                   </div>
 
@@ -839,10 +778,27 @@ function App() {
 
               <div className="map-footer">
                 <Layers3 size={14} />
-                Three perspectives • one document
+                AI-generated perspective map
               </div>
             </div>
 
+            <div className="result-grid">
+              <ResultCard
+                className="key-points-card"
+                icon={<Target size={19} />}
+                label="KEY TAKEAWAYS"
+                title="What should you remember?"
+                items={summary.keyPoints || []}
+              />
+
+              <ResultCard
+                className="suggestions-card"
+                icon={<Lightbulb size={19} />}
+                label="NEXT LENS"
+                title="Where could the document go further?"
+                items={summary.improvementSuggestions || []}
+              />
+            </div>
           </section>
         )}
 
@@ -876,8 +832,26 @@ function App() {
         <span>UNFOLD</span>
         <span>Document intelligence, made simple.</span>
       </footer>
-      </div>
-    </>
+    </div>
+  );
+}
+
+function ResultCard({ icon, label, title, items, className = "" }) {
+  return (
+    <article className={`result-card ${className}`}>
+      <div className="result-card-icon">{icon}</div>
+      <span className="section-kicker">{label}</span>
+      <h3>{title}</h3>
+
+      <ul>
+        {items.map((item, index) => (
+          <li key={index}>
+            <span className="bullet" />
+            <p>{item}</p>
+          </li>
+        ))}
+      </ul>
+    </article>
   );
 }
 
